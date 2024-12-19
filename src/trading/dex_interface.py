@@ -6,12 +6,14 @@ from typing import Dict, Optional, Tuple
 import logging
 import asyncio
 import random
+import time
 from solana.rpc.async_api import AsyncClient
 from solana.keypair import Keypair
 from solana.transaction import Transaction
 from solana.system_program import TransferParams
 from solana.publickey import PublicKey
 from solana.rpc.commitment import Confirmed
+from ..analytics.volume_tracker import TradeRecord
 
 logger = logging.getLogger(__name__)
 
@@ -109,7 +111,8 @@ class RaydiumDEX:
         wallet: Keypair,
         amount: float,
         is_buy: bool,
-        slippage: float = 0.5
+        slippage: float = 0.5,
+        volume_tracker = None
     ) -> str:
         """
         Execute a swap on Raydium
@@ -119,11 +122,15 @@ class RaydiumDEX:
             amount: Amount to swap
             is_buy: True for buy, False for sell
             slippage: Maximum acceptable slippage percentage
+            volume_tracker: Optional VolumeTracker instance for analytics
 
         Returns:
             Transaction signature
         """
         try:
+            # Get pre-trade price
+            pre_price = await self.get_market_price()
+
             # Create and execute swap transaction
             transaction, expected_output = await self.create_swap_instruction(
                 wallet, amount, is_buy, slippage
@@ -139,6 +146,33 @@ class RaydiumDEX:
 
             # Wait for confirmation
             await self.rpc_client.confirm_transaction(signature["result"])
+
+            # Get post-trade price and calculate metrics
+            post_price = await self.get_market_price()
+
+            # Track analytics if volume tracker provided
+            if volume_tracker:
+                # Calculate price impact
+                price_impact = volume_tracker.track_price_impact(
+                    str(self.pool_id),
+                    pre_price,
+                    post_price
+                )
+
+                # Calculate profit/loss for sell trades
+                profit_loss = (post_price - pre_price) * amount if not is_buy else 0
+
+                # Record trade
+                volume_tracker.record_trade(TradeRecord(
+                    timestamp=time.time(),
+                    wallet_address=str(wallet.public_key),
+                    token_address=str(self.pool_id),
+                    side='buy' if is_buy else 'sell',
+                    amount=amount,
+                    price=post_price,
+                    profit_loss=profit_loss,
+                    price_impact=price_impact
+                ))
 
             logger.info(
                 f"Successfully executed {'buy' if is_buy else 'sell'} swap "

@@ -71,12 +71,13 @@ class TradingPattern:
                     amount = self._generate_trade_amount()
                     logger.info(f"Executing buy operation {i+1} of {amount} SOL from wallet {wallet_key}")
 
-                    # Execute buy with incrementing price impact
+                    # Execute buy with price tracking
                     await self.dex.execute_swap(
                         wallet=wallet,
                         amount=amount,
                         is_buy=True,
-                        slippage=self.slippage
+                        slippage=self.slippage,
+                        volume_tracker=self.config.get('volume_tracker')
                     )
                     current_price *= (1 + self.price_impact)
                     await self._random_delay()
@@ -90,7 +91,8 @@ class TradingPattern:
                         wallet=wallet,
                         amount=amount,
                         is_buy=False,
-                        slippage=self.slippage
+                        slippage=self.slippage,
+                        volume_tracker=self.config.get('volume_tracker')
                     )
                     await self._random_delay()
 
@@ -141,7 +143,8 @@ class TradingPattern:
                     wallet=wallet,
                     amount=amount,
                     is_buy=True,
-                    slippage=self.slippage
+                    slippage=self.slippage,
+                    volume_tracker=self.config.get('volume_tracker')
                 )
                 await self._random_delay()
 
@@ -152,7 +155,8 @@ class TradingPattern:
                     wallet=wallet,
                     amount=amount,
                     is_buy=False,
-                    slippage=self.slippage
+                    slippage=self.slippage,
+                    volume_tracker=self.config.get('volume_tracker')
                 )
                 await self._random_delay()
 
