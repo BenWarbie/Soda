@@ -14,6 +14,7 @@ from ..wallet.wallet_manager import WalletManager
 from .dex_interface import RaydiumDEX
 from .trading_patterns import TradingPattern
 from ..analytics.volume_tracker import VolumeTracker, TradeRecord
+from .bundler import JitoBundler  # Add bundler import
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +40,7 @@ class TradeExecutor:
         self.mode = TradingMode(os.getenv("TRADING_MODE", "SAFE"))
         self.active_trades: Dict[str, Dict] = {}
         self.volume_tracker = VolumeTracker()
+        self.bundler = JitoBundler(wallet_manager, dex)
         self.trading_pattern = TradingPattern(
             wallet_manager=wallet_manager,
             dex=dex,
@@ -187,3 +189,11 @@ class TradeExecutor:
     async def export_session_data(self, filename: str):
         """Exports session data to JSON file"""
         self.volume_tracker.export_session_data(filename)
+
+    async def execute_bundled_purchase(self, token_address: str, total_amount: float):
+        """Execute a bundled token purchase split across multiple wallets"""
+        return await self.bundler.split_purchase(token_address, total_amount)
+
+    async def execute_incremental_sell(self, token_address: str, sell_percentage: float = 0.1):
+        """Execute an incremental sell operation across multiple wallets"""
+        return await self.bundler.incremental_sell(token_address, sell_percentage, 60)
