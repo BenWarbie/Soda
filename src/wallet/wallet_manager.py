@@ -8,12 +8,12 @@ import os
 import logging
 import asyncio
 import random
-from solana.rpc.async_api import AsyncClient
-from solana.keypair import Keypair
-from solana.transaction import Transaction
-from solana.system_program import transfer, TransferParams
-from solana.publickey import PublicKey
-from solana.rpc.commitment import Confirmed
+from solders.rpc.async_api import AsyncClient
+from solders.keypair import Keypair
+from solders.transaction import Transaction
+from solders.system_program import transfer, TransferParams
+from solders.pubkey import Pubkey
+from solders.rpc.commitment import Confirmed
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -102,7 +102,7 @@ class WalletManager:
                     transfer(
                         TransferParams(
                             from_pubkey=main_keypair.public_key,
-                            to_pubkey=PublicKey(wallet_key),
+                            to_pubkey=Pubkey(wallet_key),
                             lamports=int(amount_per_wallet * 1e9)
                         )
                     )
@@ -132,7 +132,7 @@ class WalletManager:
         """Recalls SOL from trading wallets back to main wallet"""
         total_recalled = 0.0
         try:
-            main_pubkey = PublicKey(Keypair.from_secret_key(bytes.fromhex(self.main_wallet_key)).public_key)
+            main_pubkey = Pubkey(Keypair.from_secret_key(bytes.fromhex(self.main_wallet_key)).public_key)
 
             for wallet_key in wallet_keys:
                 wallet = self.trading_wallets[wallet_key]
@@ -145,9 +145,9 @@ class WalletManager:
                     transfer_tx = Transaction().add(
                         transfer(
                             TransferParams(
-                                from_pubkey=wallet.public_key,
-                                to_pubkey=main_pubkey,
-                                lamports=int(transfer_amount)
+                            from_pubkey=wallet.public_key,
+                            to_pubkey=main_pubkey,
+                            lamports=int(transfer_amount)
                             )
                         )
                     )

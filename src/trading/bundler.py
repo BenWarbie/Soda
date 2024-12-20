@@ -1,7 +1,7 @@
 from typing import List, Optional
-from solana.rpc.types import TxOpts
-from solana.transaction import Transaction
-from solana.keypair import Keypair
+from solders.rpc.types import TxOpts
+from solders.transaction import Transaction
+from solders.keypair import Keypair
 from ..wallet.wallet_manager import WalletManager
 from .dex_interface import RaydiumDEX
 import logging

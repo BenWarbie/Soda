@@ -7,8 +7,8 @@ import asyncio
 import logging
 import random
 from datetime import datetime
-from solana.rpc.async_api import AsyncClient
-from solana.keypair import Keypair
+from solders.rpc.async_api import AsyncClient
+from solders.keypair import Keypair
 from ..wallet.wallet_manager import WalletManager
 from .dex_interface import RaydiumDEX
 
