@@ -1,4 +1,3 @@
-import { LineChart, XAxis, YAxis, Tooltip, Line } from 'recharts'
 import { Activity, Wallet, Settings } from 'lucide-react'
 import { Card, CardHeader, CardContent } from './components/ui/card'
 import { Button } from './components/ui/button'
@@ -6,15 +5,17 @@ import { ConfigPanel } from './components/ConfigPanel'
 import { useWebSocket } from './contexts/WebSocketContext'
 import { useTradeData } from './hooks/useTradeData'
 import { useState } from 'react'
+import { VolumeChart } from './components/analytics/VolumeChart'
+import { BundlerControls } from './components/BundlerControls'
 
 export default function App() {
   const { connected, sendMessage } = useWebSocket()
-  const { trades, totalBalance, totalProfitLoss, activeWallets } = useTradeData()
+  const { trades, totalBalance, totalProfitLoss, activeWallets, bundlerStatus } = useTradeData()
   const [tradingMode, setTradingMode] = useState('normal')
 
-  const chartData = trades.map(trade => ({
-    time: new Date(trade.timestamp).toLocaleTimeString(),
-    price: trade.price
+  const volumeData = trades.map(trade => ({
+    time: trade.timestamp.toString(),
+    volume: trade.amount
   }))
 
   const handleStartTrading = () => {
@@ -50,15 +51,9 @@ export default function App() {
               <CardHeader>
                 <h2 className="text-lg font-semibold">Trading Overview</h2>
               </CardHeader>
-              <CardContent>
-                <div className="h-64">
-                  <LineChart width={600} height={200} data={chartData}>
-                    <XAxis dataKey="time" />
-                    <YAxis />
-                    <Tooltip />
-                    <Line type="monotone" dataKey="price" stroke="#8884d8" />
-                  </LineChart>
-                </div>
+              <CardContent className="space-y-6">
+                <VolumeChart data={volumeData} />
+                <BundlerControls />
               </CardContent>
             </Card>
           </div>
@@ -74,10 +69,10 @@ export default function App() {
           <div className="lg:col-span-3">
             <Card>
               <CardHeader>
-                <h2 className="text-lg font-semibold">Wallet Performance</h2>
+                <h2 className="text-lg font-semibold">Performance Metrics</h2>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div className="p-4 bg-secondary rounded-lg">
                     <div className="text-sm text-muted-foreground">Total Balance</div>
                     <div className="text-2xl font-semibold mt-1">{totalBalance.toFixed(2)} SOL</div>
@@ -91,6 +86,10 @@ export default function App() {
                   <div className="p-4 bg-secondary rounded-lg">
                     <div className="text-sm text-muted-foreground">Active Wallets</div>
                     <div className="text-2xl font-semibold mt-1">{activeWallets}</div>
+                  </div>
+                  <div className="p-4 bg-secondary rounded-lg">
+                    <div className="text-sm text-muted-foreground">Active Bundles</div>
+                    <div className="text-2xl font-semibold mt-1">{bundlerStatus.activeBundles}</div>
                   </div>
                 </div>
               </CardContent>
