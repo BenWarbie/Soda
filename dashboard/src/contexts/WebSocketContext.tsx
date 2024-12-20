@@ -1,8 +1,24 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
 
+interface BundlerMessage {
+  type: 'start_bundled_buy' | 'start_incremental_sell' | 'stop_bundler'
+  token_address?: string
+  split_count?: number
+  split_size?: number
+  timestamp?: number
+}
+
+interface TradeMessage {
+  type: 'start_trading' | 'stop_trading'
+  mode?: string
+  timestamp?: number
+}
+
+type WebSocketMessage = BundlerMessage | TradeMessage
+
 interface WebSocketContextType {
   connected: boolean
-  sendMessage: (message: any) => void
+  sendMessage: (message: WebSocketMessage) => void
   lastMessage: any | null
 }
 
@@ -29,7 +45,12 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     }
 
     ws.onmessage = (event) => {
-      setLastMessage(JSON.parse(event.data))
+      try {
+        const data = JSON.parse(event.data)
+        setLastMessage(data)
+      } catch (error) {
+        console.error('Failed to parse WebSocket message:', error)
+      }
     }
 
     setSocket(ws)
@@ -39,9 +60,12 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
-  const sendMessage = (message: any) => {
+  const sendMessage = (message: WebSocketMessage) => {
     if (socket?.readyState === WebSocket.OPEN) {
-      socket.send(JSON.stringify(message))
+      socket.send(JSON.stringify({
+        ...message,
+        timestamp: Date.now()
+      }))
     }
   }
 

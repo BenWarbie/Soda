@@ -10,6 +10,10 @@ interface ConfigPanelProps {
   onStopTrading: () => void
   isConnected: boolean
   currentMode: string
+  onBundlerConfigChange?: (config: {
+    splitCount: number
+    splitSize: number
+  }) => void
 }
 
 export function ConfigPanel({
@@ -17,7 +21,8 @@ export function ConfigPanel({
   onStartTrading,
   onStopTrading,
   isConnected,
-  currentMode
+  currentMode,
+  onBundlerConfigChange
 }: ConfigPanelProps) {
   return (
     <div className="space-y-4">
@@ -49,6 +54,38 @@ export function ConfigPanel({
                 <div>
                   <Label className="text-sm">Take Profit (%)</Label>
                   <Input type="number" placeholder="5.0" min="0" max="100" step="0.1" />
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <Label>Bundler Configuration</Label>
+              <div className="space-y-2 mt-2">
+                <div>
+                  <Label className="text-sm">Split Count</Label>
+                  <Input
+                    type="number"
+                    placeholder="3"
+                    min="2"
+                    max="10"
+                    onChange={(e) => onBundlerConfigChange?.({
+                      splitCount: parseInt(e.target.value),
+                      splitSize: 0.5
+                    })}
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm">Split Size (SOL)</Label>
+                  <Input
+                    type="number"
+                    placeholder="0.5"
+                    min="0.1"
+                    step="0.1"
+                    onChange={(e) => onBundlerConfigChange?.({
+                      splitCount: 3,
+                      splitSize: parseFloat(e.target.value)
+                    })}
+                  />
                 </div>
               </div>
             </div>

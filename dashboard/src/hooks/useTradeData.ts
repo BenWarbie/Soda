@@ -16,12 +16,19 @@ export interface WalletPerformance {
   trades: number
 }
 
+export interface BundlerStatus {
+  activeBundles: number
+  pendingTransactions: number
+  completedBundles: number
+}
+
 export interface TradingState {
   trades: Trade[]
   wallets: WalletPerformance[]
   totalBalance: number
   totalProfitLoss: number
   activeWallets: number
+  bundlerStatus: BundlerStatus
 }
 
 const initialState: TradingState = {
@@ -29,7 +36,12 @@ const initialState: TradingState = {
   wallets: [],
   totalBalance: 0,
   totalProfitLoss: 0,
-  activeWallets: 0
+  activeWallets: 0,
+  bundlerStatus: {
+    activeBundles: 0,
+    pendingTransactions: 0,
+    completedBundles: 0
+  }
 }
 
 export function useTradeData() {
@@ -53,6 +65,15 @@ export function useTradeData() {
             totalBalance: data.totalBalance,
             totalProfitLoss: data.totalProfitLoss,
             activeWallets: data.activeWallets
+          }))
+        } else if (data.type === 'bundler_update') {
+          setTradingState(prev => ({
+            ...prev,
+            bundlerStatus: {
+              activeBundles: data.activeBundles,
+              pendingTransactions: data.pendingTransactions,
+              completedBundles: data.completedBundles
+            }
           }))
         }
       } catch (error) {
