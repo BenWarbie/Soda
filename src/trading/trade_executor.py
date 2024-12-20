@@ -14,7 +14,8 @@ from ..wallet.wallet_manager import WalletManager
 from .dex_interface import RaydiumDEX
 from .trading_patterns import TradingPattern
 from ..analytics.volume_tracker import VolumeTracker, TradeRecord
-from .bundler import JitoBundler  # Add bundler import
+from .bundler import JitoBundler
+from .mev_protection import MEVProtection
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +42,7 @@ class TradeExecutor:
         self.active_trades: Dict[str, Dict] = {}
         self.volume_tracker = VolumeTracker()
         self.bundler = JitoBundler(wallet_manager, dex)
+        self.mev_protection = MEVProtection(self.bundler)
         self.trading_pattern = TradingPattern(
             wallet_manager=wallet_manager,
             dex=dex,
@@ -197,3 +199,39 @@ class TradeExecutor:
     async def execute_incremental_sell(self, token_address: str, sell_percentage: float = 0.1):
         """Execute an incremental sell operation across multiple wallets"""
         return await self.bundler.incremental_sell(token_address, sell_percentage, 60)
+
+    async def execute_protected_trade(self, trade_params: Dict) -> str:
+        """
+        Execute a trade with MEV protection using JITO bundles.
+
+        Args:
+            trade_params: Dictionary containing trade parameters:
+                - token_address: Address of token to trade
+                - amount: Amount to trade
+                - is_buy: True for buy, False for sell
+                - slippage: Maximum acceptable slippage
+
+        Returns:
+            Transaction signature
+        """
+        try:
+            # Create swap instruction
+            swap_tx = await self.dex.create_swap_instruction(
+                self.wallet_manager.get_active_wallet(),
+                trade_params['amount'],
+                trade_params['is_buy'],
+                trade_params.get('slippage', 0.5)
+            )
+
+            # Create protected bundle
+            protected_bundle = self.mev_protection.create_protected_bundle(
+                swap_tx,
+                self.wallet_manager.get_wallet_group()
+            )
+
+            # Execute bundle through JITO
+            return await self.bundler.send_bundle(protected_bundle)
+
+        except Exception as e:
+            logger.error(f"Error executing protected trade: {str(e)}")
+            raise
