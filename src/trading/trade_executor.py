@@ -2,7 +2,7 @@
 Trade execution system for coordinating trades across multiple wallets.
 Implements high-frequency trading and volume-based patterns.
 """
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Tuple
 from enum import Enum
 import os
 import time
@@ -10,11 +10,15 @@ import asyncio
 import random
 import logging
 from datetime import datetime, timedelta
+from decimal import Decimal
 from ..wallet.wallet_manager import WalletManager
 from .dex_interface import RaydiumDEX
 from .trading_patterns import TradingPattern
 from ..analytics.volume_tracker import VolumeTracker, TradeRecord
-from .bundler import JitoBundler  # Add bundler import
+from .bundler import JitoBundler
+from .mev_protection import MEVProtection
+from .risk_manager import RiskManager, Position
+from .arbitrage_detector import ArbitrageDetector
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +45,9 @@ class TradeExecutor:
         self.active_trades: Dict[str, Dict] = {}
         self.volume_tracker = VolumeTracker()
         self.bundler = JitoBundler(wallet_manager, dex)
+        self.mev_protection = MEVProtection(self.bundler)
+        self.risk_manager = RiskManager(self, dex, wallet_manager, config)
+        self.arbitrage_detector = ArbitrageDetector()
         self.trading_pattern = TradingPattern(
             wallet_manager=wallet_manager,
             dex=dex,
@@ -197,3 +204,233 @@ class TradeExecutor:
     async def execute_incremental_sell(self, token_address: str, sell_percentage: float = 0.1):
         """Execute an incremental sell operation across multiple wallets"""
         return await self.bundler.incremental_sell(token_address, sell_percentage, 60)
+
+    async def execute_protected_trade(self, trade_params: Dict) -> str:
+        """
+        Execute a trade with MEV protection using JITO bundles.
+
+        Args:
+            trade_params: Dictionary containing trade parameters:
+                - token_address: Address of token to trade
+                - amount: Amount to trade
+                - is_buy: True for buy, False for sell
+                - slippage: Maximum acceptable slippage
+
+        Returns:
+            Transaction signature
+        """
+        try:
+            # Create swap instruction
+            swap_tx = await self.dex.create_swap_instruction(
+                self.wallet_manager.get_active_wallet(),
+                trade_params['amount'],
+                trade_params['is_buy'],
+                trade_params.get('slippage', 0.5)
+            )
+
+            # Create protected bundle
+            protected_bundle = self.mev_protection.create_protected_bundle(
+                swap_tx,
+                self.wallet_manager.get_wallet_group()
+            )
+
+            # Execute bundle through JITO
+            return await self.bundler.send_bundle(protected_bundle)
+
+        except Exception as e:
+            logger.error(f"Error executing protected trade: {str(e)}")
+            raise
+
+    async def start_position_monitoring(self):
+        """Start monitoring positions for stop-loss conditions."""
+        await self.risk_manager.start_monitoring()
+
+    async def stop_position_monitoring(self):
+        """Stop monitoring positions."""
+        await self.risk_manager.stop_monitoring()
+
+    async def add_monitored_position(
+        self,
+        token_address: str,
+        entry_price: float,
+        amount: float,
+        wallet_address: str,
+        stop_loss_threshold: Optional[float] = None,
+        trailing_stop: bool = False,
+        trailing_distance: Optional[float] = None
+    ) -> Position:
+        """
+        Add a position to be monitored for stop-loss.
+
+        Args:
+            token_address: Address of the token
+            entry_price: Entry price of the position
+            amount: Position size
+            wallet_address: Address of the wallet holding the position
+            stop_loss_threshold: Optional custom stop-loss threshold
+            trailing_stop: Whether to use trailing stop
+            trailing_distance: Distance for trailing stop
+
+        Returns:
+            Created Position instance
+        """
+        return self.risk_manager.add_position(
+            token_address=token_address,
+            entry_price=Decimal(str(entry_price)),
+            amount=Decimal(str(amount)),
+            wallet_address=wallet_address,
+            stop_loss_threshold=(
+                Decimal(str(stop_loss_threshold)) if stop_loss_threshold else None
+            ),
+            trailing_stop=trailing_stop,
+            trailing_distance=(
+                Decimal(str(trailing_distance)) if trailing_distance else None
+            )
+        )
+
+    async def remove_monitored_position(
+        self,
+        wallet_address: str,
+        token_address: str
+    ):
+        """
+        Remove a position from stop-loss monitoring.
+
+        Args:
+            wallet_address: Address of the wallet
+            token_address: Address of the token
+        """
+        self.risk_manager.remove_position(wallet_address, token_address)
+
+    async def execute_trade(
+        self,
+        token_address: str,
+        amount: float,
+        is_buy: bool,
+        slippage: float = 0.5,
+        check_arbitrage: bool = True
+    ) -> Tuple[str, Dict]:
+        """
+        Execute a trade with optional arbitrage checking and MEV protection.
+
+        Args:
+            token_address: Address of token to trade
+            amount: Amount to trade
+            is_buy: True for buy, False for sell
+            slippage: Maximum acceptable slippage
+            check_arbitrage: Whether to check for arbitrage opportunities
+
+        Returns:
+            Tuple of (transaction signature, trade details)
+        """
+        try:
+            # Check for arbitrage opportunities if enabled
+            if check_arbitrage:
+                opportunities = await self.arbitrage_detector.find_opportunities(
+                    token_address,
+                    amount
+                )
+                if opportunities:
+                    best_opportunity = opportunities[0]
+                    if best_opportunity['profit_ratio'] > self.config.get(
+                        'min_arbitrage_profit',
+                        0.005  # 0.5% minimum profit
+                    ):
+                        logger.info(
+                            f"Found profitable arbitrage opportunity: "
+                            f"{best_opportunity}"
+                        )
+                        return await self._execute_arbitrage(best_opportunity)
+
+            # Prepare trade parameters
+            trade_params = {
+                'token_address': token_address,
+                'amount': amount,
+                'is_buy': is_buy,
+                'slippage': slippage
+            }
+
+            # Execute protected trade
+            signature = await self.execute_protected_trade(trade_params)
+
+            # Add position monitoring if it's a buy
+            if is_buy:
+                entry_price = await self.dex.get_token_price(token_address)
+                position = await self.add_monitored_position(
+                    token_address=token_address,
+                    entry_price=float(entry_price),
+                    amount=amount,
+                    wallet_address=self.wallet_manager.get_active_wallet(),
+                    trailing_stop=self.config.get('use_trailing_stop', False)
+                )
+
+            return signature, {
+                'type': 'arbitrage' if opportunities else 'normal',
+                'entry_price': float(entry_price) if is_buy else None,
+                'position_id': position.wallet_address if is_buy else None
+            }
+
+        except Exception as e:
+            logger.error(f"Error executing trade: {str(e)}")
+            raise
+
+    async def _execute_arbitrage(self, opportunity: Dict) -> Tuple[str, Dict]:
+        """
+        Execute an arbitrage opportunity.
+
+        Args:
+            opportunity: Dictionary containing arbitrage opportunity details
+
+        Returns:
+            Tuple of (transaction signature, trade details)
+        """
+        try:
+            # Create arbitrage bundle
+            buy_params = {
+                'token_address': opportunity['token_address'],
+                'amount': opportunity['optimal_amount'],
+                'is_buy': True,
+                'slippage': 1.0  # Higher slippage for arbitrage
+            }
+            sell_params = {
+                'token_address': opportunity['token_address'],
+                'amount': opportunity['optimal_amount'],
+                'is_buy': False,
+                'slippage': 1.0
+            }
+
+            # Execute buy on cheaper DEX
+            buy_tx = await self.dex.create_swap_instruction(
+                self.wallet_manager.get_active_wallet(),
+                buy_params['amount'],
+                True,
+                buy_params['slippage']
+            )
+
+            # Execute sell on more expensive DEX
+            sell_tx = await self.dex.create_swap_instruction(
+                self.wallet_manager.get_active_wallet(),
+                sell_params['amount'],
+                False,
+                sell_params['slippage']
+            )
+
+            # Create protected bundle
+            bundle = self.mev_protection.create_protected_bundle(
+                [buy_tx, sell_tx],
+                self.wallet_manager.get_wallet_group()
+            )
+
+            # Execute bundle
+            signature = await self.bundler.send_bundle(bundle)
+
+            return signature, {
+                'type': 'arbitrage',
+                'profit_ratio': opportunity['profit_ratio'],
+                'buy_dex': opportunity['buy_dex'],
+                'sell_dex': opportunity['sell_dex']
+            }
+
+        except Exception as e:
+            logger.error(f"Error executing arbitrage: {str(e)}")
+            raise
