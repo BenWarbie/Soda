@@ -10,12 +10,14 @@ import asyncio
 import random
 import logging
 from datetime import datetime, timedelta
+from decimal import Decimal
 from ..wallet.wallet_manager import WalletManager
 from .dex_interface import RaydiumDEX
 from .trading_patterns import TradingPattern
 from ..analytics.volume_tracker import VolumeTracker, TradeRecord
 from .bundler import JitoBundler
 from .mev_protection import MEVProtection
+from .risk_manager import RiskManager, Position
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +45,7 @@ class TradeExecutor:
         self.volume_tracker = VolumeTracker()
         self.bundler = JitoBundler(wallet_manager, dex)
         self.mev_protection = MEVProtection(self.bundler)
+        self.risk_manager = RiskManager(self, dex, wallet_manager, config)
         self.trading_pattern = TradingPattern(
             wallet_manager=wallet_manager,
             dex=dex,
@@ -235,3 +238,64 @@ class TradeExecutor:
         except Exception as e:
             logger.error(f"Error executing protected trade: {str(e)}")
             raise
+
+    async def start_position_monitoring(self):
+        """Start monitoring positions for stop-loss conditions."""
+        await self.risk_manager.start_monitoring()
+
+    async def stop_position_monitoring(self):
+        """Stop monitoring positions."""
+        await self.risk_manager.stop_monitoring()
+
+    async def add_monitored_position(
+        self,
+        token_address: str,
+        entry_price: float,
+        amount: float,
+        wallet_address: str,
+        stop_loss_threshold: Optional[float] = None,
+        trailing_stop: bool = False,
+        trailing_distance: Optional[float] = None
+    ) -> Position:
+        """
+        Add a position to be monitored for stop-loss.
+
+        Args:
+            token_address: Address of the token
+            entry_price: Entry price of the position
+            amount: Position size
+            wallet_address: Address of the wallet holding the position
+            stop_loss_threshold: Optional custom stop-loss threshold
+            trailing_stop: Whether to use trailing stop
+            trailing_distance: Distance for trailing stop
+
+        Returns:
+            Created Position instance
+        """
+        return self.risk_manager.add_position(
+            token_address=token_address,
+            entry_price=Decimal(str(entry_price)),
+            amount=Decimal(str(amount)),
+            wallet_address=wallet_address,
+            stop_loss_threshold=(
+                Decimal(str(stop_loss_threshold)) if stop_loss_threshold else None
+            ),
+            trailing_stop=trailing_stop,
+            trailing_distance=(
+                Decimal(str(trailing_distance)) if trailing_distance else None
+            )
+        )
+
+    async def remove_monitored_position(
+        self,
+        wallet_address: str,
+        token_address: str
+    ):
+        """
+        Remove a position from stop-loss monitoring.
+
+        Args:
+            wallet_address: Address of the wallet
+            token_address: Address of the token
+        """
+        self.risk_manager.remove_position(wallet_address, token_address)
