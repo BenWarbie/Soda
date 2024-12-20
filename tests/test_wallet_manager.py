@@ -5,8 +5,8 @@ import pytest
 import asyncio
 from unittest.mock import Mock, patch
 from src.wallet.wallet_manager import WalletManager
-from solana.rpc.async_api import AsyncClient
-from solana.keypair import Keypair
+from solders.rpc.async_api import AsyncClient
+from solders.keypair import Keypair
 
 @pytest.fixture
 async def wallet_manager():

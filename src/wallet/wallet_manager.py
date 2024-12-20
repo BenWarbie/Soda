@@ -8,12 +8,12 @@ import os
 import logging
 import asyncio
 import random
-from solana.rpc.async_api import AsyncClient
+from solders.rpc.async_api import AsyncClient
 from solders.keypair import Keypair
 from solders.transaction import Transaction
 from solders.system_program import transfer, TransferParams
 from solders.pubkey import Pubkey
-from solana.rpc.commitment import Confirmed
+from solders.rpc.commitment import Confirmed
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -145,9 +145,9 @@ class WalletManager:
                     transfer_tx = Transaction().add(
                         transfer(
                             TransferParams(
-                                from_pubkey=wallet.public_key,
-                                to_pubkey=main_pubkey,
-                                lamports=int(transfer_amount)
+                            from_pubkey=wallet.public_key,
+                            to_pubkey=main_pubkey,
+                            lamports=int(transfer_amount)
                             )
                         )
                     )

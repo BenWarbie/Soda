@@ -7,12 +7,12 @@ import logging
 import asyncio
 import random
 import time
-from solana.rpc.async_api import AsyncClient
+from solders.rpc.async_api import AsyncClient
 from solders.keypair import Keypair
 from solders.transaction import Transaction
 from solders.system_program import TransferParams
 from solders.pubkey import Pubkey
-from solana.rpc.commitment import Confirmed
+from solders.rpc.commitment import Confirmed
 from ..analytics.volume_tracker import TradeRecord
 
 logger = logging.getLogger(__name__)

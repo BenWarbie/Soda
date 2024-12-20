@@ -1,6 +1,6 @@
 """Helper functions for Solana blockchain interactions."""
 from typing import Dict
-from solana.rpc.async_api import AsyncClient
+from solders.rpc.async_api import AsyncClient
 
 async def get_token_balance(
     client: AsyncClient,
