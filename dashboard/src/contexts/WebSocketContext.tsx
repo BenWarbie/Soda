@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
+import { TradingState } from '../hooks/useTradeData'
 
 interface BundlerMessage {
   type: 'start_bundled_buy' | 'start_incremental_sell' | 'stop_bundler'
@@ -14,24 +15,69 @@ interface TradeMessage {
   timestamp?: number
 }
 
-type WebSocketMessage = BundlerMessage | TradeMessage
+interface PositionMessage {
+  type: 'position_update'
+  positions: Array<{
+    token_address: string
+    entry_price: number
+    amount: number
+    wallet_address: string
+    stop_loss_threshold: number
+    trailing_stop: boolean
+    trailing_distance: number
+    highest_price: number
+    stop_loss_price: number
+  }>
+  priceImpacts: Record<string, number>
+}
+
+type WebSocketMessage = BundlerMessage | TradeMessage | PositionMessage
 
 interface WebSocketContextType {
   connected: boolean
   sendMessage: (message: WebSocketMessage) => void
-  lastMessage: any | null
+  lastMessage: WebSocketMessage | null
+  tradingState: TradingState
 }
 
 const WebSocketContext = createContext<WebSocketContextType>({
   connected: false,
   sendMessage: () => {},
   lastMessage: null,
+  tradingState: {
+    trades: [],
+    wallets: [],
+    positions: [],
+    priceImpacts: {},
+    totalBalance: 0,
+    totalProfitLoss: 0,
+    activeWallets: 0,
+    bundlerStatus: {
+      activeBundles: 0,
+      pendingTransactions: 0,
+      completedBundles: 0
+    }
+  }
 })
 
 export function WebSocketProvider({ children }: { children: React.ReactNode }) {
   const [socket, setSocket] = useState<WebSocket | null>(null)
   const [connected, setConnected] = useState(false)
   const [lastMessage, setLastMessage] = useState<any>(null)
+  const [tradingState, setTradingState] = useState<TradingState>({
+    trades: [],
+    wallets: [],
+    positions: [],
+    priceImpacts: {},
+    totalBalance: 0,
+    totalProfitLoss: 0,
+    activeWallets: 0,
+    bundlerStatus: {
+      activeBundles: 0,
+      pendingTransactions: 0,
+      completedBundles: 0
+    }
+  })
 
   useEffect(() => {
     const ws = new WebSocket('ws://localhost:8000/ws')
@@ -47,7 +93,21 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data)
-        setLastMessage(data)
+        // Handle different message types
+        if (data.type === 'position_update') {
+          setTradingState(prev => ({
+            ...prev,
+            positions: data.positions,
+            priceImpacts: data.priceImpacts || prev.priceImpacts
+          }))
+          setLastMessage(data)
+        } else if (data.type === 'trade') {
+          setLastMessage(data)
+        } else if (data.type === 'wallet_update') {
+          setLastMessage(data)
+        } else if (data.type === 'bundler_update') {
+          setLastMessage(data)
+        }
       } catch (error) {
         console.error('Failed to parse WebSocket message:', error)
       }

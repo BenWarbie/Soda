@@ -93,6 +93,46 @@ class VolumeTracker:
             stats['buys' if trade.side == 'buy' else 'sells'] += 1
         return wallet_stats
 
+    def get_positions(self) -> Dict[str, Dict]:
+        """Get current positions for all wallets"""
+        positions = {}
+        for trade in self.trades:
+            wallet = trade.wallet_address
+            token = trade.token_address
+
+            if wallet not in positions:
+                positions[wallet] = {}
+
+            if token not in positions[wallet]:
+                positions[wallet][token] = {
+                    'amount': 0.0,
+                    'avg_price': 0.0,
+                    'total_cost': 0.0,
+                    'unrealized_pl': 0.0
+                }
+
+            pos = positions[wallet][token]
+            if trade.side == 'buy':
+                total_cost = pos['amount'] * pos['avg_price'] + trade.amount * trade.price
+                new_amount = pos['amount'] + trade.amount
+                pos['avg_price'] = total_cost / new_amount if new_amount > 0 else 0
+                pos['amount'] = new_amount
+                pos['total_cost'] = total_cost
+            else:
+                pos['amount'] -= trade.amount
+                if pos['amount'] <= 0:
+                    pos['amount'] = 0
+                    pos['avg_price'] = 0
+                    pos['total_cost'] = 0
+
+            pos['unrealized_pl'] = pos['amount'] * (trade.price - pos['avg_price'])
+
+        return positions
+
+    def get_price_impacts(self) -> Dict[str, float]:
+        """Get latest price impacts for all tokens"""
+        return self.price_impacts
+
     def generate_report(self) -> Dict:
         """Generates comprehensive session report with P/L metrics"""
         if not self.session_start:

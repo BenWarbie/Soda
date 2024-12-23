@@ -3,20 +3,13 @@ import { Card, CardHeader, CardContent } from './components/ui/card'
 import { Button } from './components/ui/button'
 import { ConfigPanel } from './components/ConfigPanel'
 import { useWebSocket } from './contexts/WebSocketContext'
-import { useTradeData } from './hooks/useTradeData'
 import { useState } from 'react'
-import { VolumeChart } from './components/analytics/VolumeChart'
 import { BundlerControls } from './components/BundlerControls'
+import { Dashboard } from './components/analytics/Dashboard'
 
 export default function App() {
   const { connected, sendMessage } = useWebSocket()
-  const { trades, totalBalance, totalProfitLoss, activeWallets, bundlerStatus } = useTradeData()
   const [tradingMode, setTradingMode] = useState('normal')
-
-  const volumeData = trades.map(trade => ({
-    time: trade.timestamp.toString(),
-    volume: trade.amount
-  }))
 
   const handleStartTrading = () => {
     sendMessage({ type: 'start_trading', mode: tradingMode })
@@ -52,7 +45,7 @@ export default function App() {
                 <h2 className="text-lg font-semibold">Trading Overview</h2>
               </CardHeader>
               <CardContent className="space-y-6">
-                <VolumeChart data={volumeData} />
+                <Dashboard />
                 <BundlerControls />
               </CardContent>
             </Card>
@@ -65,35 +58,6 @@ export default function App() {
               isConnected={connected}
               currentMode={tradingMode}
             />
-          </div>
-          <div className="lg:col-span-3">
-            <Card>
-              <CardHeader>
-                <h2 className="text-lg font-semibold">Performance Metrics</h2>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div className="p-4 bg-secondary rounded-lg">
-                    <div className="text-sm text-muted-foreground">Total Balance</div>
-                    <div className="text-2xl font-semibold mt-1">{totalBalance.toFixed(2)} SOL</div>
-                  </div>
-                  <div className="p-4 bg-secondary rounded-lg">
-                    <div className="text-sm text-muted-foreground">24h Profit/Loss</div>
-                    <div className={`text-2xl font-semibold mt-1 ${totalProfitLoss >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                      {totalProfitLoss >= 0 ? '+' : ''}{totalProfitLoss.toFixed(2)} SOL
-                    </div>
-                  </div>
-                  <div className="p-4 bg-secondary rounded-lg">
-                    <div className="text-sm text-muted-foreground">Active Wallets</div>
-                    <div className="text-2xl font-semibold mt-1">{activeWallets}</div>
-                  </div>
-                  <div className="p-4 bg-secondary rounded-lg">
-                    <div className="text-sm text-muted-foreground">Active Bundles</div>
-                    <div className="text-2xl font-semibold mt-1">{bundlerStatus.activeBundles}</div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
           </div>
         </div>
       </main>

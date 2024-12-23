@@ -83,6 +83,12 @@ export function useTradeData() {
             totalProfitLoss: data.totalProfitLoss,
             activeWallets: data.activeWallets
           }))
+        } else if (data.type === 'position_update') {
+          setTradingState(prev => ({
+            ...prev,
+            positions: data.positions,
+            priceImpacts: data.priceImpacts || prev.priceImpacts
+          }))
         } else if (data.type === 'bundler_update') {
           setTradingState(prev => ({
             ...prev,
