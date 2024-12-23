@@ -121,16 +121,22 @@ class RiskManager:
         self.monitoring = False
 
     async def _check_positions(self):
-        """Check all positions for stop-loss conditions."""
+        """Enhanced position monitoring with price impact tracking"""
         for position in self.positions.values():
             try:
-                current_price = await self.dex.get_token_price(position.token_address)
+                current_price = await self.dex.get_market_price()
+                price_impact = await self.dex.calculate_price_impact(
+                    position.token_address,
+                    float(position.amount)
+                )
 
-                # Update trailing stop if needed
+                # Update trailing stop with price impact consideration
                 if position.trailing_stop and current_price > position.highest_price:
                     position.highest_price = current_price
+                    # Adjust stop loss based on price impact
+                    impact_adjusted_distance = position.trailing_distance + (Decimal(str(price_impact)) * 2)
                     position.stop_loss_price = current_price * (
-                        Decimal('1') - position.trailing_distance
+                        Decimal('1') - impact_adjusted_distance
                     )
 
                 # Check if stop-loss is triggered

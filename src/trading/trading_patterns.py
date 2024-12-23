@@ -168,19 +168,53 @@ class TradingPattern:
 
     async def execute_high_frequency_pattern(self, wallet_group: List[str], duration_seconds: int):
         """
-        Execute high-frequency trading pattern
-        Implements rapid trading with anti-detection mechanisms
+        Execute high-frequency trading pattern with improved coordination
+        Implements rapid trading with parallel execution and anti-detection mechanisms
         """
         try:
             logger.info(f"Starting high-frequency pattern execution for {len(wallet_group)} wallets")
             start_time = datetime.now()
 
+            # Split wallets into buy/sell groups with 2:1 ratio
+            buy_group = wallet_group[:int(len(wallet_group) * 0.67)]  # 67% buyers
+            sell_group = wallet_group[int(len(wallet_group) * 0.67):]  # 33% sellers
+
             while (datetime.now() - start_time).seconds < duration_seconds:
-                for wallet_key in wallet_group:
-                    # Execute rapid trades with minimal delays
-                    amount = self._generate_trade_amount()
-                    # TODO: Implement rapid trading using DEX interface
-                    await asyncio.sleep(0.2)  # 200ms delay between trades
+                # Execute parallel trades with coordination
+                buy_tasks = []
+                sell_tasks = []
+
+                # Prepare buy operations (smaller amounts)
+                for wallet_key in buy_group:
+                    amount = self._generate_trade_amount() * 0.8  # Smaller amounts for buys
+                    buy_tasks.append(self.dex.execute_swap(
+                        wallet=self.wallet_manager.trading_wallets[wallet_key],
+                        amount=amount,
+                        is_buy=True,
+                        slippage=self.slippage,
+                        volume_tracker=self.config.get('volume_tracker')
+                    ))
+
+                # Prepare sell operations (larger amounts)
+                for wallet_key in sell_group:
+                    amount = self._generate_trade_amount() * 1.2  # Larger amounts for sells
+                    sell_tasks.append(self.dex.execute_swap(
+                        wallet=self.wallet_manager.trading_wallets[wallet_key],
+                        amount=amount,
+                        is_buy=False,
+                        slippage=self.slippage,
+                        volume_tracker=self.config.get('volume_tracker')
+                    ))
+
+                # Execute buys first
+                await asyncio.gather(*buy_tasks)
+                await asyncio.sleep(0.2)  # 200ms delay between buy/sell waves
+
+                # Execute sells
+                await asyncio.gather(*sell_tasks)
+                await asyncio.sleep(0.2)  # 200ms delay between rounds
+
+                logger.debug(f"Completed trading round at {datetime.now()}")
 
             logger.info("Completed high-frequency pattern execution")
 

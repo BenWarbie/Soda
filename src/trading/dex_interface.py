@@ -185,13 +185,48 @@ class RaydiumDEX:
             raise
 
     async def get_market_price(self) -> float:
-        """Get current market price from the pool"""
+        """Get current market price from the pool with reserves calculation"""
         try:
             pool_info = await self.get_pool_info()
-            # Note: Actual implementation will calculate price from pool reserves
-            # This is a placeholder for price calculation
-            return 1.0
+            token_a_amount = float(pool_info['data']['tokenAAmount'])
+            token_b_amount = float(pool_info['data']['tokenBAmount'])
+
+            if token_a_amount == 0:
+                raise ValueError("Token A reserve is zero")
+
+            # Calculate price from reserves
+            price = token_b_amount / token_a_amount
+            logger.debug(f"Calculated price {price} from reserves A:{token_a_amount} B:{token_b_amount}")
+            return float(price)
 
         except Exception as e:
             logger.error(f"Error getting market price: {str(e)}")
+            raise
+
+    async def calculate_price_impact(self, token_address: str, amount: float) -> float:
+        """
+        Calculate the price impact of a trade.
+
+        Args:
+            token_address: Address of the token
+            amount: Amount to trade
+
+        Returns:
+            Price impact as a decimal (e.g., 0.02 for 2% impact)
+        """
+        try:
+            pool_info = await self.get_pool_info()
+            token_a_reserve = float(pool_info['data']['tokenAAmount'])
+            token_b_reserve = float(pool_info['data']['tokenBAmount'])
+
+            # Calculate price impact using constant product formula
+            # Impact = |1 - (x * y)/(x + Δx)(y - Δy)|
+            impact = abs(1 - (token_a_reserve * token_b_reserve) /
+                        ((token_a_reserve + amount) * (token_b_reserve - (amount * token_b_reserve/token_a_reserve))))
+
+            logger.debug(f"Calculated price impact {impact} for amount {amount}")
+            return float(impact)
+
+        except Exception as e:
+            logger.error(f"Error calculating price impact: {str(e)}")
             raise
