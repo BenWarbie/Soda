@@ -130,7 +130,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <WebSocketContext.Provider value={{ connected, sendMessage, lastMessage }}>
+    <WebSocketContext.Provider value={{ connected, sendMessage, lastMessage, tradingState }}>
       {children}
     </WebSocketContext.Provider>
   )
