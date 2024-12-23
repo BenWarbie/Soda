@@ -11,14 +11,14 @@ import random
 import logging
 from datetime import datetime, timedelta
 from decimal import Decimal
-from ..wallet.wallet_manager import WalletManager
-from .dex_interface import RaydiumDEX
-from .trading_patterns import TradingPattern
-from ..analytics.volume_tracker import VolumeTracker, TradeRecord
-from .bundler import JitoBundler
-from .mev_protection import MEVProtection
-from .risk_manager import RiskManager, Position
-from .arbitrage_detector import ArbitrageDetector
+from wallet.wallet_manager import WalletManager
+from trading.dex_interface import RaydiumDEX
+from trading.trading_patterns import TradingPattern
+from analytics.volume_tracker import VolumeTracker, TradeRecord
+from trading.bundler import JitoBundler
+from trading.mev_protection import MEVProtection
+from trading.risk_manager import RiskManager, Position
+from trading.arbitrage_detector import ArbitrageDetector
 
 logger = logging.getLogger(__name__)
 

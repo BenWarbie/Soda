@@ -9,8 +9,8 @@ import random
 from datetime import datetime
 from solders.rpc.async_api import AsyncClient
 from solders.keypair import Keypair
-from ..wallet.wallet_manager import WalletManager
-from .dex_interface import RaydiumDEX
+from wallet.wallet_manager import WalletManager
+from trading.dex_interface import RaydiumDEX
 
 logger = logging.getLogger(__name__)
 

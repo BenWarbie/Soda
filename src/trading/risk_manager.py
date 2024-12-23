@@ -7,9 +7,9 @@ from decimal import Decimal
 import asyncio
 import logging
 from datetime import datetime
-from .dex_interface import RaydiumDEX
-from ..wallet.wallet_manager import WalletManager
-from .trade_executor import TradeExecutor
+from trading.dex_interface import RaydiumDEX
+from wallet.wallet_manager import WalletManager
+from trading.trade_executor import TradeExecutor
 
 logger = logging.getLogger(__name__)
 
