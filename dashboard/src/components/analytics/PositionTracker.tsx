@@ -1,4 +1,4 @@
-import React from 'react'
+import { FC } from 'react'
 import { Card, Table } from 'antd'
 import { useTradeData } from '../../hooks/useTradeData'
 import type { ColumnsType } from 'antd/es/table'

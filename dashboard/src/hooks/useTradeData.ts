@@ -67,9 +67,8 @@ export function useTradeData() {
 
   useEffect(() => {
     if (lastMessage) {
-      try {
-        const data = JSON.parse(lastMessage)
-
+      // No need to parse, lastMessage is already an object
+      const data = lastMessage
         if (data.type === 'trade') {
           setTradingState(prev => ({
             ...prev,

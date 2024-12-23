@@ -1,4 +1,4 @@
-import React from 'react'
+import { FC } from 'react'
 import { LineChart, XAxis, YAxis, Tooltip, Line } from 'recharts'
 
 interface VolumeData {
@@ -10,7 +10,7 @@ interface VolumeChartProps {
   data: VolumeData[]
 }
 
-export function VolumeChart({ data }: VolumeChartProps) {
+export const VolumeChart: FC<VolumeChartProps> = ({ data }) => {
   return (
     <div className="w-[600px] h-[200px]">
       <LineChart width={600} height={200} data={data}>
