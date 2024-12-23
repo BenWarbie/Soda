@@ -46,3 +46,15 @@ async def get_trade_history(limit: int = 50):
         return tracker.get_trade_history(limit)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/positions")
+async def get_positions():
+    """Get current positions with risk metrics"""
+    try:
+        tracker = VolumeTracker()
+        return {
+            "positions": tracker.get_positions(),
+            "price_impacts": tracker.get_price_impacts()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
