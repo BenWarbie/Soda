@@ -2,13 +2,18 @@ FROM node:20-slim
 
 WORKDIR /app
 
-COPY package.json .
-COPY pnpm-lock.yaml .
+# Copy package files first
+COPY package.json pnpm-lock.yaml ./
 
-RUN npm install -g pnpm && pnpm install
+# Install dependencies
+RUN npm install -g pnpm && \
+    pnpm install --frozen-lockfile
 
+# Copy source files (excluding node_modules)
 COPY . .
+RUN rm -rf node_modules && pnpm install --frozen-lockfile
 
+# Build the application
 RUN pnpm build
 
 EXPOSE 3000
