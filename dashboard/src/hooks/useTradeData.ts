@@ -14,6 +14,19 @@ export interface WalletPerformance {
   balance: number
   profitLoss: number
   trades: number
+  roi: number
+}
+
+export interface Position {
+  token_address: string
+  entry_price: number
+  amount: number
+  wallet_address: string
+  stop_loss_threshold: number
+  trailing_stop: boolean
+  trailing_distance: number
+  highest_price: number
+  stop_loss_price: number
 }
 
 export interface BundlerStatus {
@@ -25,6 +38,8 @@ export interface BundlerStatus {
 export interface TradingState {
   trades: Trade[]
   wallets: WalletPerformance[]
+  positions: Position[]
+  priceImpacts: Record<string, number>
   totalBalance: number
   totalProfitLoss: number
   activeWallets: number
@@ -34,6 +49,8 @@ export interface TradingState {
 const initialState: TradingState = {
   trades: [],
   wallets: [],
+  positions: [],
+  priceImpacts: {},
   totalBalance: 0,
   totalProfitLoss: 0,
   activeWallets: 0,
