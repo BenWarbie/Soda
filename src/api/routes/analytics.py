@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from typing import Dict, List
-from ...analytics.volume_tracker import VolumeTracker
+from analytics.volume_tracker import VolumeTracker
 from datetime import datetime, timedelta
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])

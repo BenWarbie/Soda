@@ -1,11 +1,11 @@
 from fastapi import APIRouter, HTTPException, Depends
 from typing import Dict, List, Optional
-from ...trading.trade_executor import TradeExecutor
-from ...trading.bundler import Bundler
-from ...wallet.wallet_manager import WalletManager
-from ...utils.config import Config
-from ..models.trading import TradeRequest, TradeResponse, WalletInfo, TradingMode
-from ..websocket.manager import WebSocketManager
+from trading.trade_executor import TradeExecutor
+from trading.bundler import Bundler
+from wallet.wallet_manager import WalletManager
+from utils.config import Config
+from api.models.trading import TradeRequest, TradeResponse, WalletInfo, TradingMode
+from api.websocket.manager import WebSocketManager
 
 router = APIRouter(prefix="/trading", tags=["trading"])
 ws_manager = WebSocketManager()
