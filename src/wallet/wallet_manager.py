@@ -8,12 +8,11 @@ import os
 import logging
 import asyncio
 import random
-from solders.rpc.async_api import AsyncClient
-from solders.keypair import Keypair
-from solders.transaction import Transaction
-from solders.system_program import transfer, TransferParams
-from solders.pubkey import Pubkey
-from solders.rpc.commitment import Confirmed
+from solana.rpc.async_api import AsyncClient
+from solana.transaction import Transaction
+from solana.system_program import transfer, TransferParams
+from solana.publickey import PublicKey
+from solana.keypair import Keypair
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -24,7 +23,7 @@ class WalletManager:
         """Initialize wallet manager with configuration from environment"""
         self.rpc_client = AsyncClient(
             os.getenv("SOLANA_RPC_URL", "https://api.devnet.solana.com"),
-            commitment=Confirmed
+            commitment='confirmed'
         )
         self.main_wallet_key = os.getenv("MAIN_WALLET_PRIVATE_KEY")
         self.max_wallets = int(os.getenv("MAX_WALLETS", "10"))
@@ -93,7 +92,7 @@ class WalletManager:
         """Distributes SOL from main wallet to trading wallets"""
         try:
             signatures = []
-            main_keypair = Keypair.from_secret_key(bytes.fromhex(self.main_wallet_key))
+            main_keypair = Keypair.from_bytes(bytes.fromhex(self.main_wallet_key))
 
             for wallet_key in wallet_keys:
                 recent_blockhash = await self.rpc_client.get_recent_blockhash()
@@ -102,7 +101,7 @@ class WalletManager:
                     transfer(
                         TransferParams(
                             from_pubkey=main_keypair.public_key,
-                            to_pubkey=Pubkey(wallet_key),
+                            to_pubkey=PublicKey(wallet_key),
                             lamports=int(amount_per_wallet * 1e9)
                         )
                     )
@@ -132,7 +131,7 @@ class WalletManager:
         """Recalls SOL from trading wallets back to main wallet"""
         total_recalled = 0.0
         try:
-            main_pubkey = Pubkey(Keypair.from_secret_key(bytes.fromhex(self.main_wallet_key)).public_key)
+            main_pubkey = PublicKey(Keypair.from_bytes(bytes.fromhex(self.main_wallet_key)).public_key)
 
             for wallet_key in wallet_keys:
                 wallet = self.trading_wallets[wallet_key]
