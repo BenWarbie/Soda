@@ -1,1 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.Python
+venv*/
+.env
+*.egg-info/
+dist/
+build/
+
+# Node
+node_modules/
+.pnpm-store/
+dist/
+*.log
+.npm
+.next
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Project specific
 dashboard/node_modules/
