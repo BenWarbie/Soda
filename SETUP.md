@@ -4,7 +4,7 @@
 - Git
 - Docker and Docker Compose
 - Node.js 18+ (for dashboard development)
-- Python 3.12+ (for backend development)
+- Python 3.10 (for backend development - required for Solana compatibility)
 
 ## Initial Setup
 
