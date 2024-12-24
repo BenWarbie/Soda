@@ -2,9 +2,8 @@
 
 ## Prerequisites
 - Git
-- Docker and Docker Compose
-- Node.js 18+ (for dashboard development)
-- Python 3.10 (for backend development - required for Solana compatibility)
+- Python 3.10 (required for Solana compatibility)
+- Solana CLI tools
 
 ## Initial Setup
 
@@ -26,23 +25,13 @@ cp .env.example .env
 
 ## Development Environment
 
-### Using Docker (Recommended)
-1. Start the services:
-```bash
-docker-compose up --build
-```
-
-2. Access the applications:
-- Dashboard: http://localhost:3000
-- API: http://localhost:8000
-
-### Local Development
-
-#### Backend (FastAPI)
+### Local Setup
 1. Create a Python virtual environment:
 ```bash
 python -m venv venv
 source venv/bin/activate  # Linux/Mac
+# or
+.\venv\Scripts\activate  # Windows
 ```
 
 2. Install dependencies:
@@ -50,111 +39,63 @@ source venv/bin/activate  # Linux/Mac
 pip install -r requirements.txt
 ```
 
-3. Start the development server:
-```bash
-uvicorn src.api.main:app --reload --host 0.0.0.0 --port 8000
-```
+## Trading Configuration
 
-#### Frontend (React + TypeScript)
-1. Navigate to dashboard directory:
-```bash
-cd dashboard
-```
+### Trading Modes
+- SAFE: Conservative trading with minimal risk
+- NORMAL: Balanced risk/reward trading
+- AGGRESSIVE: Higher risk trading for potential higher returns
+- HIGH_FREQUENCY: Rapid trading with multiple transactions
 
-2. Install dependencies:
-```bash
-npm install
-```
+### Trading Patterns
+1. Pump Pattern
+   - Coordinated buy pressure across multiple wallets
+   - Configurable volume distribution
 
-3. Start development server:
-```bash
-npm run dev
-```
+2. Milkshake Pattern
+   - Sequential trading across wallet groups
+   - Customizable timing intervals
 
-## Application Components
-
-### Backend
-- FastAPI application (`src/api/`)
-- WebSocket server for real-time updates
-- Trading execution engine
-- Analytics system
-
-### Frontend
-- React + TypeScript dashboard
-- Real-time trading data visualization
-- Configuration management interface
-- Analytics dashboard
+3. High-Frequency Pattern
+   - Rapid trading execution
+   - Automated position management
 
 ## Health Checks
-Both services include health check endpoints:
-- API: http://localhost:8000/health
-- Dashboard: http://localhost:3000
-
-Health check configuration:
-- Interval: 30 seconds
-- Timeout: 10 seconds
-- Retries: 3
+The bot includes built-in health monitoring:
+- Wallet balance verification
+- Transaction success monitoring
+- Error logging and reporting
 
 ## Troubleshooting
 
-### Docker Issues
-If encountering Docker storage driver issues:
-1. Stop Docker service:
-```bash
-sudo systemctl stop docker
-```
-
-2. Update Docker daemon configuration:
-```bash
-sudo tee /etc/docker/daemon.json <<EOF
-{
-  "storage-driver": "vfs"
-}
-EOF
-```
-
-3. Restart Docker:
-```bash
-sudo systemctl start docker
-```
-
-### Python Dependencies
-If encountering websockets compatibility issues:
-1. Update the package: `pip install websockets==11.0.3`
-
 ### Common Issues
-1. Port conflicts:
-   - Ensure ports 3000 and 8000 are available
-   - Check for other services using these ports
+1. Solana RPC connection:
+   - Verify RPC endpoint in .env
+   - Check network connectivity
 
 2. Environment variables:
    - Verify `.env` file exists
    - Check all required variables are set
 
-3. Network issues:
-   - Verify Solana RPC endpoint is accessible
-   - Check WebSocket connection status
+3. Wallet issues:
+   - Ensure sufficient SOL balance
+   - Verify wallet permissions
 
 ## Development Workflow
 1. Create feature branch
 2. Implement changes
-3. Run linting:
-   - Backend: `black src/`
-   - Frontend: `npm run lint`
+3. Run tests: `pytest tests/`
 4. Submit pull request
 
-## Deployment
-1. Build images:
-```bash
-docker-compose build
-```
+## Error Handling
+The bot includes comprehensive error handling:
+- Transaction failure recovery
+- Network interruption handling
+- Automatic retry mechanisms
 
-2. Start services:
-```bash
-docker-compose up -d
-```
-
-3. Monitor logs:
-```bash
-docker-compose logs -f
-```
+## Logging
+Logs are written to the terminal and include:
+- Trading activity
+- Wallet operations
+- Error messages
+- Performance metrics
