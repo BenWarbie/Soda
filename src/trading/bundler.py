@@ -2,8 +2,8 @@ from typing import List, Optional
 from solders.rpc.types import TxOpts
 from solders.transaction import Transaction
 from solders.keypair import Keypair
-from ..wallet.wallet_manager import WalletManager
-from .dex_interface import RaydiumDEX
+from wallet.wallet_manager import WalletManager
+from trading.dex_interface import RaydiumDEX
 import logging
 
 logger = logging.getLogger(__name__)

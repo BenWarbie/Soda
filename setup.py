@@ -10,7 +10,7 @@ setup(
         "python-dotenv>=1.0.0",
         "aiohttp>=3.9.1",
     ],
-    python_requires=">=3.8",
+    python_requires=">=3.10,<3.11",
     author="Ben",
     description="Multi-wallet trading bot for Solana blockchain",
 )
