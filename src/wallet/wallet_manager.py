@@ -8,15 +8,15 @@ import os
 import logging
 import asyncio
 import random
-from solana.rpc.async_api import AsyncClient
-from solana.transaction import Transaction
+from solders.rpc.config import AsyncClient
+from solders.transaction import Transaction
 from solders.system_program import transfer, TransferParams
 from solders.pubkey import Pubkey
 from solders.keypair import Keypair
 # Type hints
 from solders.pubkey import Pubkey as PubkeyType
 from solders.keypair import Keypair as KeypairType
-from solana.transaction import Transaction as TransactionType
+from solders.transaction import Transaction as TransactionType
 from dotenv import load_dotenv
 
 load_dotenv()

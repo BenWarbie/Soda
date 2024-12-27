@@ -5,7 +5,7 @@ import pytest
 import asyncio
 from unittest.mock import Mock, patch
 from src.wallet.wallet_manager import WalletManager
-from solders.rpc.async_api import AsyncClient
+from solders.rpc.config import AsyncClient
 from solders.keypair import Keypair
 
 @pytest.fixture
