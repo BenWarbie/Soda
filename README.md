@@ -1,12 +1,13 @@
 # Solana Trading Bot
 
-Multi-wallet trading bot for Solana blockchain with coordinated buy/sell capabilities.
+Terminal-based multi-wallet trading bot for Solana blockchain with coordinated buy/sell capabilities.
 
 ## Features
 - Multi-wallet management and coordination
-- Automated trading patterns across wallet groups
+- Automated trading patterns (Pump, Milkshake, High-Frequency)
 - SOL distribution and recall functionality
-- Configurable trading modes (Safe/Normal/Aggressive)
+- Configurable trading modes (Safe/Normal/Aggressive/High-Frequency)
+- Terminal-based execution and monitoring
 
 ## Setup
 1. Create and activate Python virtual environment:
@@ -25,6 +26,19 @@ pip install -r requirements.txt
 cp .env.example .env
 # Edit .env with your configuration
 ```
+
+## Usage
+Run the trading bot from the command line:
+```bash
+python src/cli.py --mode SAFE --duration 30 --wallets 5 --min-amount 0.1
+```
+
+### Command Line Arguments
+- `--mode`: Trading mode (SAFE/NORMAL/AGGRESSIVE/HIGH_FREQUENCY)
+- `--duration`: Trading session duration in minutes
+- `--wallets`: Number of trading wallets to create
+- `--min-amount`: Minimum trade amount in SOL
+- `--pattern`: Trading pattern (PUMP/MILKSHAKE/HIGH_FREQUENCY)
 
 ## Project Structure
 ```
