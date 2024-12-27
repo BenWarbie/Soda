@@ -6,8 +6,8 @@ setup(
     packages=find_packages(where="src"),
     package_dir={"": "src"},
     install_requires=[
-        "solana>=0.30.2",
-        "solders>=0.18.1,<0.19.0",
+        "solders>=0.18.1,<0.19.0",  # Must be installed before solana
+        "solana==0.30.2",  # Pin exact version to match requirements.txt
         "python-dotenv>=1.0.0",
         "aiohttp>=3.9.1",
         "pytest>=7.4.3",
