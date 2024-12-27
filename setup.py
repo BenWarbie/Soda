@@ -12,5 +12,5 @@ setup(
     ],
     python_requires=">=3.10,<3.11",
     author="Ben",
-    description="Multi-wallet trading bot for Solana blockchain",
+    description="Terminal-based multi-wallet trading bot for Solana blockchain",
 )

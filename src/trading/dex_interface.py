@@ -7,12 +7,12 @@ import logging
 import asyncio
 import random
 import time
-from solders.rpc.async_api import AsyncClient
-from solders.keypair import Keypair
-from solders.transaction import Transaction
-from solders.system_program import TransferParams
-from solders.pubkey import Pubkey
-from solders.rpc.commitment import Confirmed
+from solana.rpc.async_api import AsyncClient
+from solana.transaction import Transaction, TransactionInstruction
+from solana.system_program import TransferParams
+from solana.publickey import PublicKey
+from solana.keypair import Keypair
+from raydium.sdk import Liquidity, Token, TokenAmount, Percent
 from ..analytics.volume_tracker import TradeRecord
 
 logger = logging.getLogger(__name__)
@@ -33,13 +33,13 @@ class RaydiumDEX:
                 - max_retries: Maximum retry attempts
         """
         self.config = config
-        self.rpc_client = AsyncClient(
+        self.connection = AsyncClient(
             config['rpc_url'],
-            commitment=config.get('commitment', Confirmed)
+            commitment=config.get('commitment', 'confirmed')
         )
-        self.program_id = Pubkey(config['program_id'])
-        self.amm_id = Pubkey(config['amm_id'])
-        self.pool_id = Pubkey(config['pool_id'])
+        self.program_id = PublicKey(config['program_id'])
+        self.amm_id = PublicKey(config['amm_id'])
+        self.pool_id = PublicKey(config['pool_id'])
         self.max_retries = config.get('max_retries', 3)
 
     async def _retry_operation(self, operation_func, *args, **kwargs):
@@ -90,21 +90,37 @@ class RaydiumDEX:
             # Get pool state and calculate amounts
             pool_info = await self.get_pool_info()
 
-            # Create transaction instruction
-            recent_blockhash = await self.rpc_client.get_recent_blockhash()
-            transaction = Transaction()
-            transaction.recent_blockhash = recent_blockhash["result"]["value"]["blockhash"]
+            # Create tokens
+            base_token = Token(self.program_id, self.pool_id, pool_info['baseDecimals'])
+            quote_token = Token(self.program_id, self.amm_id, 9)  # USDC has 9 decimals
 
-            # Add Raydium swap instruction
-            # Note: Actual implementation will use Raydium SDK
-            # This is a placeholder for the swap instruction
-            expected_output = amount * (1 - slippage/100)
+            # Create token amount
+            input_token = quote_token if is_buy else base_token
+            input_amount = TokenAmount(input_token, amount)
 
-            return transaction, expected_output
+            # Calculate swap amounts
+            swap_info = Liquidity.computeAmountOut({
+                'poolKeys': pool_info,
+                'amountIn': input_amount,
+                'currencyOut': base_token if is_buy else quote_token,
+                'slippage': Percent(slippage * 100, 10000)
+            })
+
+            # Create transaction
+            tx = Transaction()
+            tx.add(TransactionInstruction(
+                keys=swap_info.keys,
+                program_id=self.program_id,
+                data=swap_info.data
+            ))
+
+            return tx, swap_info.minAmountOut
 
         except Exception as e:
             logger.error(f"Error creating swap instruction: {str(e)}")
             raise
+
+
 
     async def execute_swap(
         self,
@@ -128,24 +144,24 @@ class RaydiumDEX:
             Transaction signature
         """
         try:
-            # Get pre-trade price
+            # Get pre-trade price for analytics
             pre_price = await self.get_market_price()
 
             # Create and execute swap transaction
-            transaction, expected_output = await self.create_swap_instruction(
+            transaction, min_amount = await self.create_swap_instruction(
                 wallet, amount, is_buy, slippage
             )
 
             # Sign and send transaction
             transaction.sign(wallet)
-            signature = await self._retry_operation(
-                self.rpc_client.send_transaction,
+            signature = await self.connection.send_transaction(
                 transaction,
-                wallet
+                wallet,
+                opts={'skip_preflight': True}
             )
 
             # Wait for confirmation
-            await self.rpc_client.confirm_transaction(signature["result"])
+            await self.connection.confirm_transaction(signature['result'])
 
             # Get post-trade price and calculate metrics
             post_price = await self.get_market_price()
@@ -176,9 +192,9 @@ class RaydiumDEX:
 
             logger.info(
                 f"Successfully executed {'buy' if is_buy else 'sell'} swap "
-                f"of {amount} with expected output {expected_output}"
+                f"of {amount} with minimum output {min_amount}"
             )
-            return signature["result"]
+            return signature['result']
 
         except Exception as e:
             logger.error(f"Error executing swap: {str(e)}")

@@ -2,11 +2,16 @@ from typing import List, Optional
 from solders.rpc.types import TxOpts
 from solders.transaction import Transaction
 from solders.keypair import Keypair
+from solders.pubkey import Pubkey
+from jito_bundler import Bundle, SearcherClient
 from wallet.wallet_manager import WalletManager
 from trading.dex_interface import RaydiumDEX
 import logging
+import random
 
 logger = logging.getLogger(__name__)
+
+JITO_FEE = 10000  # Fee in lamports (0.00001 SOL)
 
 class JitoBundler:
     def __init__(self, wallet_manager: WalletManager, dex: RaydiumDEX):
@@ -34,12 +39,33 @@ class JitoBundler:
                 logger.warning(f"Transaction chunk size {len(transactions)} exceeds bundle limit {self.bundle_size_limit}")
                 return None
 
-            bundle = await self.dex.create_jito_bundle(transactions)
-            if not bundle:
-                return None
+            # Create bundle and get recent blockhash
+            bundle = Bundle([], self.bundle_size_limit)
+            recent_blockhash = await self.dex.connection.get_recent_blockhash()
 
-            result = await self.dex.submit_jito_bundle(bundle, timeout_seconds=30)
-            return result
+            # Add transactions to bundle
+            for tx in transactions:
+                bundle.add_transaction(tx)
+
+            # Get tip accounts and select one randomly
+            tip_accounts = await self.dex.connection.get_tip_accounts()
+            tip_account = tip_accounts[min(int(random.random() * len(tip_accounts)), 3)]
+
+            # Add tip transaction
+            bundle.add_tip_tx(
+                self.wallet_manager.get_fee_payer(),
+                JITO_FEE,
+                Pubkey.from_string(tip_account),
+                recent_blockhash['result']['value']['blockhash']
+            )
+
+            # Submit bundle
+            result = await self.dex.connection.send_bundle(
+                bundle,
+                opts={'skipPreflight': True}
+            )
+            return result['result']
+
         except Exception as e:
             logger.error(f"Bundle building failed: {e}")
             return None
