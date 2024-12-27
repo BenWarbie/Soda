@@ -8,15 +8,15 @@ import os
 import logging
 import asyncio
 import random
-from solders.rpc.async_api import AsyncClient
-from solders.transaction import Transaction
-from solders.system_program import transfer, TransferParams
-from solders.pubkey import Pubkey
-from solders.keypair import Keypair
+from solana.rpc.async_api import AsyncClient
+from solana.transaction import Transaction
+from solana.system_program import transfer, TransferParams
+from solana.publickey import PublicKey
+from solana.keypair import Keypair
 # Type hints
-from solders.pubkey import Pubkey as PubkeyType
-from solders.keypair import Keypair as KeypairType
-from solders.transaction import Transaction as TransactionType
+from solana.publickey import PublicKey as PubkeyType
+from solana.keypair import Keypair as KeypairType
+from solana.transaction import Transaction as TransactionType
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -119,7 +119,7 @@ class WalletManager:
                 transfer_ix = transfer(
                     TransferParams(
                         from_pubkey=main_wallet.pubkey(),
-                        to_pubkey=Pubkey.from_string(wallet_key),
+                        to_pubkey=PublicKey(wallet_key),
                         lamports=lamports_per_wallet
                     )
                 )
