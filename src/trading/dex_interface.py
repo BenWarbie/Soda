@@ -7,7 +7,8 @@ import logging
 import asyncio
 import random
 import time
-from solders.rpc.config import AsyncClient
+
+from solana.rpc.async_api import AsyncClient
 from solders.transaction import Transaction
 from solders.instruction import Instruction as TransactionInstruction
 from solders.system_program import TransferParams

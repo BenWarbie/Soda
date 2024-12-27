@@ -8,7 +8,7 @@ import os
 import logging
 import asyncio
 import random
-from solders.rpc.config import AsyncClient
+from solana.rpc.async_api import AsyncClient
 from solders.transaction import Transaction
 from solders.system_program import transfer, TransferParams
 from solders.pubkey import Pubkey

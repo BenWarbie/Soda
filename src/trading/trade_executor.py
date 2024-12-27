@@ -11,6 +11,13 @@ import random
 import logging
 from datetime import datetime, timedelta
 from decimal import Decimal
+
+from solana.rpc.async_api import AsyncClient
+from solders.transaction import Transaction
+from solders.instruction import Instruction as TransactionInstruction
+from solders.keypair import Keypair
+from solders.pubkey import Pubkey
+
 from wallet.wallet_manager import WalletManager
 from trading.dex_interface import RaydiumDEX
 from trading.trading_patterns import TradingPattern

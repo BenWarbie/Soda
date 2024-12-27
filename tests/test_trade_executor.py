@@ -5,6 +5,11 @@ import pytest
 import asyncio
 from unittest.mock import Mock, patch
 from datetime import datetime
+
+from solana.rpc.async_api import AsyncClient
+from solders.transaction import Transaction
+from solders.instruction import Instruction as TransactionInstruction
+
 from src.trading.trade_executor import TradeExecutor
 from src.trading.dex_interface import RaydiumDEX
 from src.wallet.wallet_manager import WalletManager
