@@ -9,7 +9,7 @@ import random
 import time
 from solana.rpc.async_api import AsyncClient
 from solana.transaction import Transaction, TransactionInstruction
-from solana.system_program import TransferParams
+from solders.system_program import TransferParams
 from solana.publickey import PublicKey
 from solana.keypair import Keypair
 from raydium.sdk import Liquidity, Token, TokenAmount, Percent

@@ -58,6 +58,23 @@ Write-Host "Select 'Desktop development with C++' workload during installation" 
 pip install -r requirements.txt
 pip install -e .
 
+# Verify package versions
+Write-Host "`nVerifying package versions..." -ForegroundColor Green
+$solanaVersion = pip freeze | Select-String "solana=="
+$soldersVersion = pip freeze | Select-String "solders=="
+
+if (-not $solanaVersion -or -not $solanaVersion.ToString().Contains("0.30.2")) {
+    Write-Host "Error: solana 0.30.2 is required but found: $solanaVersion" -ForegroundColor Red
+    exit 1
+}
+
+if (-not $soldersVersion -or -not ([version]($soldersVersion -split "==")[1] -ge [version]"0.18.1")) {
+    Write-Host "Error: solders >= 0.18.1 and < 0.19.0 is required but found: $soldersVersion" -ForegroundColor Red
+    exit 1
+}
+
+Write-Host "Package versions verified successfully" -ForegroundColor Green
+
 # Setup environment configuration
 Write-Host "Setting up environment configuration..." -ForegroundColor Green
 if (-not (Test-Path ".env")) {
