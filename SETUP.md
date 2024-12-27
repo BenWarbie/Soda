@@ -136,8 +136,60 @@ The bot includes built-in health monitoring:
 ## Development Workflow
 1. Create feature branch
 2. Implement changes
-3. Run tests: `pytest tests/`
+3. Test your changes (see Testing section below)
 4. Submit pull request
+
+## Testing
+
+### Local Testing
+```bash
+# Install test dependencies
+pip install -r requirements.txt
+
+# Run all tests with coverage
+pytest tests/ --cov=src/
+
+# View coverage report in terminal
+pytest tests/ --cov=src/ --cov-report=term-missing
+
+# Run specific test file
+pytest tests/test_trade_executor.py
+```
+
+### Test Configuration
+The project uses pytest for testing with the following configuration:
+- `pytest.ini`: Configures test discovery and coverage settings
+- `.coveragerc`: Defines coverage measurement rules
+- Test files are located in the `tests/` directory
+- Coverage reports track code in the `src/` directory
+
+### CI/CD
+Tests run automatically on pull requests via GitHub Actions:
+- Multi-OS testing:
+  - Windows (windows-latest)
+  - Linux (ubuntu-latest)
+- Python 3.10 environment
+- Automated dependency installation
+- Coverage reporting via Codecov
+
+### Writing Tests
+1. Create test files in the `tests/` directory
+2. Use `pytest.mark.asyncio` for async tests
+3. Follow existing test patterns:
+```python
+import pytest
+
+@pytest.mark.asyncio
+async def test_example():
+    # Arrange
+    expected = "result"
+
+    # Act
+    actual = await some_async_function()
+
+    # Assert
+    assert actual == expected
+```
 
 ## Error Handling
 The bot includes comprehensive error handling:
