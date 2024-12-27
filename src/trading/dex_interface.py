@@ -10,8 +10,8 @@ import time
 from solana.rpc.async_api import AsyncClient
 from solana.transaction import Transaction, TransactionInstruction
 from solders.system_program import TransferParams
-from solana.publickey import PublicKey
-from solana.keypair import Keypair
+from solders.pubkey import Pubkey
+from solders.keypair import Keypair
 from raydium.sdk import Liquidity, Token, TokenAmount, Percent
 from ..analytics.volume_tracker import TradeRecord
 
@@ -37,9 +37,9 @@ class RaydiumDEX:
             config['rpc_url'],
             commitment=config.get('commitment', 'confirmed')
         )
-        self.program_id = PublicKey(config['program_id'])
-        self.amm_id = PublicKey(config['amm_id'])
-        self.pool_id = PublicKey(config['pool_id'])
+        self.program_id = Pubkey.from_string(config['program_id'])
+        self.amm_id = Pubkey.from_string(config['amm_id'])
+        self.pool_id = Pubkey.from_string(config['pool_id'])
         self.max_retries = config.get('max_retries', 3)
 
     async def _retry_operation(self, operation_func, *args, **kwargs):
